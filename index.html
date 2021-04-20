@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+</head>
+<body>
+	<div>
+		<input type="text" name="" id="remoteId">
+		<button id="btnMake">Call</button>
+	</div>
+	<video id="localVideo" style="max-width: 100px;position: absolute;z-index: 1;" autoplay playsinline controls="false"></video>
+
+	<video id="video" style="max-width: 500px" autoplay playsinline controls="false"></video>
+	
+</body>
+</html>
+<script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
+<script>
+	if (!window.mozRTCPeerConnection){
+		alert('k ho tro');
+	}else{
+		alert('ho tro');
+	}
+	var peer = new Peer(); 
+	peer.on('open', id => console.log(id))
+
+	async function getStream(){
+		try {
+	        // const constraints = {'video': true, 'audio': {'echoCancellation': true}};
+	        // const stream = await navigator.mediaDevices.getUserMedia(constraints);
+	        const constraints = 
+	        {
+			    video: {
+			        cursor: 'always' | 'motion' | 'never',
+			        displaySurface: 'application' | 'browser' | 'monitor' | 'window'
+			    }
+			}
+
+			const stream = await navigator.mediaDevices.getDisplayMedia(constraints);
+			// const constraints = {'video': true, 'audio': {'echoCancellation': true}};
+	  //       const stream = await navigator.mediaDevices.getUserMedia(constraints);
+	        const videoElement = document.querySelector('video#localVideo');
+	        videoElement.srcObject = stream;
+	        return stream;
+	    } catch(error) {
+	        console.error('Error opening video camera.', error);
+	    }
+	}
+
+	document.getElementById("btnMake").onclick = function() {
+        const id = document.getElementById('remoteId').value;
+        const openStream = getStream();
+        openStream.then((stream)=>{
+        	console.log(stream);
+        	const call = peer.call(id, stream);
+        	call.on('stream', function(remoteStream) {
+        		const videoElement = document.querySelector('video#video');
+	        	videoElement.srcObject = remoteStream;
+		    });
+        })
+    };
+
+    peer.on('call', function(call) {
+    	const openStream = getStream();
+    	openStream.then((stream)=>{
+    		call.answer(stream);
+    	})
+    	call.on('stream', function(remoteStream) {
+    		const videoElement = document.querySelector('video#video');
+        	videoElement.srcObject = remoteStream;
+	    });
+    })
+
+	// playVideoFromCamera();
+</script>
